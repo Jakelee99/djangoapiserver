@@ -47,7 +47,7 @@ jobs:
       - name: Connect to EC2 and Deployment
         run: |
           ssh -o StrictHostKeyChecking=no -i ec2-key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
-            if[ "$(docker ps -a -q -f name=^/boring_ptolemy)"]; then
+            if [ "$(docker ps -a -q -f name=^/boring_ptolemy)"]; then
               echo "컨테이너 있음"
               docker stop boring_ptolemy
               docker rmi hopaper/djangoapiserver
