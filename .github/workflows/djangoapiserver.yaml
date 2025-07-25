@@ -32,7 +32,7 @@ jobs:
 
       - name: build and release to DockerHub
         env:
-          NAME: ${{ secretes.DOCKERHUB_USERNAME }}
+          NAME: ${{ secrets.DOCKERHUB_USERNAME }}
           REPO: djangoapiserver #  Dockerhub 에서 만든 레파지토리 이름
         run: |
           docker build -t $REPO .
