@@ -1,4 +1,4 @@
-name : django
+name: django
 
 on:
   push:
@@ -10,32 +10,31 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-  steps:
-    - name: Checkout
-      uses: actions/checkout@v3
-    
-    - name: Set up Python 3.10
-      uses: actions/setup-python@v4
-      with:
-        python-version: 3.10
-    
-    - name: Install Dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
 
-    - name: Login to DockerHub
-      uses: docker/login-action@v1
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.10
 
-    - name: build and release to DockerHub
-      env:
-        NAME: ${{ secretes.DOCKERHUB_USERNAME }}
-        REPO: djangoapiserver #  Dockerhub 에서 만든 레파지토리 이름
-      run: |
-        docker build -t $REPO .
-        docker tag $REPO:latest $NAME/$REPO:latest
-        docker push $NAME/$REPO:latest
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: build and release to DockerHub
+        env:
+          NAME: ${{ secretes.DOCKERHUB_USERNAME }}
+          REPO: djangoapiserver #  Dockerhub 에서 만든 레파지토리 이름
+        run: |
+          docker build -t $REPO .
+          docker tag $REPO:latest $NAME/$REPO:latest
+          docker push $NAME/$REPO:latest
