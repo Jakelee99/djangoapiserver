@@ -55,5 +55,5 @@ jobs:
               echo "컨테이너 없음"
             fi
 
-          docker run --name boring_ptolemy -d -p 80:80 hopaper/djangoapiserver
+          sudo docker run --name djangoapiserver -p 80:80 -d --rm hopaper/djangoapiserver
           EOF
