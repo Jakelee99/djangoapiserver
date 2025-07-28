@@ -6,6 +6,14 @@ on:
   pull_request:
     branches: ["master"]
 
+permissions:
+  id-token: write
+  contents: read
+
+env :
+  AWS_REGION: ap-northeast-2
+  ECR_REPOSITORY: apiserver
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -23,37 +31,59 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+      - name: Build Docker Compose
+        run: docker-compose
 
-      - name: Login to DockerHub
-        uses: docker/login-action@v1
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          role-to-assume: arn:aws:iam::052737074023:role/apiserverrole
+          role-session-name: sampleSessionName
+          aws-region: ap-northeast-2
+      
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@ddd
 
-      - name: build and release to DockerHub
+      - name: Build Tag and Push Image to Amazon ECR
+        id: build-Image
         env:
-          NAME: ${{ secrets.DOCKERHUB_USERNAME }}
-          REPO: djangoapiserver #  Dockerhub 에서 만든 레파지토리 이름
+          ECR_REPOSITORY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker build -t $REPO .
-          docker tag $REPO:latest $NAME/$REPO:latest
-          docker push $NAME/$REPO:latest
+          docker build -t $ECR_REPOSITORY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REPOSITORY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "image=$ECR_REPOSITORY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+      # - name: Login to DockerHub
+      #   uses: docker/login-action@v1
+      #   with:
+      #     username: ${{ secrets.DOCKERHUB_USERNAME }}
+      #     password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Decode SSH Key
-        run: |
-          echo "${{ secrets.EC2_KEY }}" | base64 -d > ec2-key.pem
-          chmod 600 ec2-key.pem
+      # - name: build and release to DockerHub
+      #   env:
+      #     NAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      #     REPO: djangoapiserver #  Dockerhub 에서 만든 레파지토리 이름
+      #   run: |
+      #     docker build -t $REPO .
+      #     docker tag $REPO:latest $NAME/$REPO:latest
+      #     docker push $NAME/$REPO:latest
 
-      - name: Connect to EC2 and Deployment
-        run: |
-          ssh -o StrictHostKeyChecking=no -i ec2-key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
-            if [ "$(docker ps -a -q -f name=^/boring_ptolemy)" ]; then
-              echo "컨테이너 있음"
-              docker stop boring_ptolemy
-              docker rmi hopaper/djangoapiserver
-            else
-              echo "컨테이너 없음"
-            fi
+      # - name: Decode SSH Key
+      #   run: |
+      #     echo "${{ secrets.EC2_KEY }}" | base64 -d > ec2-key.pem
+      #     chmod 600 ec2-key.pem
 
-          sudo docker run --name djangoapiserver -p 80:80 -d --rm hopaper/djangoapiserver
-          EOF
+      # - name: Connect to EC2 and Deployment
+      #   run: |
+      #     ssh -o StrictHostKeyChecking=no -i ec2-key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+      #       if [ "$(docker ps -a -q -f name=^/boring_ptolemy)" ]; then
+      #         echo "컨테이너 있음"
+      #         docker stop boring_ptolemy
+      #         docker rmi hopaper/djangoapiserver
+      #       else
+      #         echo "컨테이너 없음"
+      #       fi
+
+      #     sudo docker run --name djangoapiserver -p 80:80 -d --rm hopaper/djangoapiserver
+      #     EOF
